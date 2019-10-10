@@ -1,9 +1,37 @@
-import { Component, ComponentInterface, Element, FunctionalComponent, Host, Listen, Method, Prop, State, Watch, h, readTask, writeTask } from '@stencil/core';
+import {
+  Component,
+  ComponentInterface,
+  Element,
+  FunctionalComponent,
+  Host,
+  Listen,
+  Method,
+  Prop,
+  State,
+  Watch,
+  h,
+  readTask,
+  writeTask
+} from '@stencil/core';
 
 import { Cell, DomRenderFn, FooterHeightFn, HeaderFn, HeaderHeightFn, ItemHeightFn, ItemRenderFn, VirtualNode } from '../../interface';
 
 import { CELL_TYPE_FOOTER, CELL_TYPE_HEADER, CELL_TYPE_ITEM } from './constants';
-import { Range, calcCells, calcHeightIndex, doRender, findCellIndex, getRange, getShouldUpdate, getViewport, inplaceUpdate, positionForIndex, resizeBuffer, updateVDom } from './virtual-scroll-utils';
+import {
+  Range,
+  calcCells,
+  calcHeightIndex,
+  doRender,
+  findCellIndex,
+  getRange,
+  getShouldUpdate,
+  getViewport,
+  inplaceUpdate,
+  positionForIndex,
+  removeItem,
+  resizeBuffer,
+  updateVDom
+} from './virtual-scroll-utils';
 
 @Component({
   tag: 'ion-virtual-scroll',
@@ -25,6 +53,7 @@ export class VirtualScroll implements ComponentInterface {
   private indexDirty = 0;
   private lastItemLen = 0;
   private rmEvent: (() => void) | undefined;
+  private animateChange = false;
 
   @Element() el!: HTMLIonVirtualScrollElement;
 
@@ -239,9 +268,20 @@ export class VirtualScroll implements ComponentInterface {
     }
   }
 
+  @Method()
+  async removeItem(index: number): Promise<void> {
+    this.animateChange = true;
+    return Promise.resolve(this.updateVD(index + 1));
+  }
+
+  updateVD(index: number) {
+    [this.virtualDom, this.cells, this.heightIndex] = removeItem(index, this.virtualDom, this.cells, this.getHeightIndex());
+    this.scheduleUpdate();
+  }
+
   private onScroll = () => {
     this.updateVirtualScroll();
-  }
+  };
 
   private updateVirtualScroll() {
     // do nothing if virtual-scroll is disabled
@@ -306,11 +346,15 @@ export class VirtualScroll implements ComponentInterface {
     // Write DOM
     // Different code paths taken depending of the render API used
     if (this.nodeRender) {
-      doRender(this.el, this.nodeRender, this.virtualDom, this.updateCellHeight.bind(this));
+      doRender(this.el, this.nodeRender, this.virtualDom, this.updateCellHeight.bind(this), this.animateChange);
     } else if (this.domRender) {
       this.domRender(this.virtualDom);
     } else if (this.renderItem) {
       this.el.forceUpdate();
+    }
+
+    if (this.animateChange) {
+      this.animateChange = false;
     }
   }
 
@@ -415,9 +459,12 @@ export class VirtualScroll implements ComponentInterface {
   private renderVirtualNode(node: VirtualNode) {
     const { type, value, index } = node.cell;
     switch (type) {
-      case CELL_TYPE_ITEM: return this.renderItem!(value, index);
-      case CELL_TYPE_HEADER: return this.renderHeader!(value, index);
-      case CELL_TYPE_FOOTER: return this.renderFooter!(value, index);
+      case CELL_TYPE_ITEM:
+        return this.renderItem!(value, index);
+      case CELL_TYPE_HEADER:
+        return this.renderHeader!(value, index);
+      case CELL_TYPE_FOOTER:
+        return this.renderFooter!(value, index);
     }
   }
 
@@ -438,7 +485,7 @@ export class VirtualScroll implements ComponentInterface {
   }
 }
 
-const VirtualProxy: FunctionalComponent<{dom: VirtualNode[]}> = ({ dom }, children, utils) => {
+const VirtualProxy: FunctionalComponent<{ dom: VirtualNode[] }> = ({ dom }, children, utils) => {
   return utils.map(children, (child, i) => {
     const node = dom[i];
     const vattrs = child.vattrs || {};

@@ -17,7 +17,7 @@
 
     <ion-header>
       <ion-toolbar>
-        <ion-title>Ionic CDN demo</ion-title>
+        <ion-title>Ionic woooop demo</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -27,9 +27,11 @@
         <template>
           <ion-card>
             <ion-card-header>
-              <ion-card-title>Card Header</ion-card-title>
+              <ion-card-title>Card Header <span class="name-number"></span></ion-card-title>
             </ion-card-header>
-            <ion-card-content class="content"></ion-card-content>
+            <ion-card-content class="content">
+            </ion-card-content>
+            <ion-button onclick="">remove item</ion-button>
           </ion-card>
         </template>
       </ion-virtual-scroll>
@@ -40,6 +42,7 @@
 
   <script>
     const virtual = document.getElementById('virtual');
+    console.dir(virtual);
     virtual.approxItemHeight = 200;
     virtual.headerFn = (item, index) => {
       if (index % 20 === 0) {
@@ -50,6 +53,15 @@
 
     function renderItem(el, item) {
       el.querySelector('.content').textContent = item.content;
+      el.querySelector('.name-number').textContent = item.index;
+      el.querySelector('ion-button').addEventListener('click', () => {
+          console.log('item clicked', item.index);
+          virtual.removeItem(item.index).then((res) => {
+              console.log('removed item', res);
+          })
+      });
+      el.style.backgroundColor = 'white';
+      console.dir(el);
       return el;
     }
 
@@ -69,7 +81,8 @@
     const items = [];
     for (var i = 0; i < 1000; i++) {
       items.push({
-        content: lorem.substring(0, lorem.length * ((i % 4)+1) / 5)
+        content: lorem.substring(0, lorem.length * ((i % 4)+1) / 5),
+          index: i
       });
     }
     virtual.items = items;

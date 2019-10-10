@@ -5,3 +5,4 @@ export const CELL_TYPE_FOOTER = 'footer';
 export const NODE_CHANGE_NONE = 0;
 export const NODE_CHANGE_POSITION = 1;
 export const NODE_CHANGE_CELL = 2;
+export const NODE_CHANGE_SLIDE_UP = 3;

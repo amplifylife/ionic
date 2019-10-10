@@ -2899,6 +2899,7 @@ export namespace Components {
     * Returns the position of the virtual item at the given index.
     */
     'positionForItem': (index: number) => Promise<number>;
+    'removeItem': (index: number) => Promise<void>;
     /**
     * NOTE: only JSX API for stencil.  Provide a render function for the footer to be rendered. Returns a JSX virtual-dom.
     */

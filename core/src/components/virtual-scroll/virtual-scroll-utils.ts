@@ -74,7 +74,8 @@ export const doRender = (
   el: HTMLElement,
   nodeRender: ItemRenderFn,
   dom: VirtualNode[],
-  updateCellHeight: (cell: Cell, node: HTMLElement) => void
+  updateCellHeight: (cell: Cell, node: HTMLElement) => void,
+  animateChange: boolean
 ) => {
   const children = Array.from(el.children).filter(n => n.tagName !== 'TEMPLATE');
   const childrenNu = children.length;
@@ -101,6 +102,7 @@ export const doRender = (
 
     // only update position when it changes
     if (node.change !== NODE_CHANGE_NONE) {
+      (animateChange) ? child.style.transition = '0.3s ease' : child.style.transition = '';
       child.style.transform = `translate3d(0,${node.top}px,0)`;
     }
 
@@ -133,9 +135,12 @@ const createNode = (el: HTMLElement, type: CellType): HTMLElement | null => {
 
 const getTemplate = (el: HTMLElement, type: CellType): HTMLTemplateElement | null => {
   switch (type) {
-    case CELL_TYPE_ITEM: return el.querySelector('template:not([name])');
-    case CELL_TYPE_HEADER: return el.querySelector('template[name=header]');
-    case CELL_TYPE_FOOTER: return el.querySelector('template[name=footer]');
+    case CELL_TYPE_ITEM:
+      return el.querySelector('template:not([name])');
+    case CELL_TYPE_HEADER:
+      return el.querySelector('template[name=header]');
+    case CELL_TYPE_FOOTER:
+      return el.querySelector('template[name=footer]');
   }
 };
 
@@ -203,17 +208,14 @@ export const inplaceUpdate = (dst: Cell[], src: Cell[], offset: number) => {
 
 export const calcCells = (
   items: any[],
-
   itemHeight: ItemHeightFn | undefined,
   headerHeight: HeaderHeightFn | undefined,
   footerHeight: FooterHeightFn | undefined,
   headerFn: HeaderFn | undefined,
   footerFn: HeaderFn | undefined,
-
   approxHeaderHeight: number,
   approxFooterHeight: number,
   approxItemHeight: number,
-
   j: number,
   offset: number,
   len: number
@@ -295,4 +297,50 @@ export const positionForIndex = (index: number, cells: Cell[], heightIndex: Uint
     return heightIndex[cell.i];
   }
   return -1;
+};
+
+export const removeItem = (index: number, nodes: VirtualNode[], cells: Cell[], heightIndex: Uint32Array): any => {
+
+  const nodeToRemove = nodes.find(n => {
+    return n.cell.index === index && n.cell.type === CELL_TYPE_ITEM;
+  });
+
+  const updatedNodes: VirtualNode[] = [];
+  const updatedCells: Cell[] = [];
+
+  if (nodeToRemove) {
+
+    nodes.forEach((node, i) => {
+      if (node.cell.i > index) {
+        node.cell.i = i - 1;
+        updatedNodes.push(node);
+      } else if (i < index) {
+        updatedNodes.push(node);
+      }
+    });
+    nodes = updatedNodes;
+
+    cells.forEach((cell, i) => {
+      if (cell.i > index) {
+        cell.i = i - 1;
+        updatedCells.push(cell);
+      } else if (i < index) {
+        updatedCells.push(cell);
+      }
+    });
+    cells = updatedCells;
+
+    heightIndex.forEach((_, i) => {
+      if (i > index) {
+        heightIndex[i] = (heightIndex[i] - nodeToRemove.cell.height);
+      }
+    });
+    heightIndex = resizeBuffer(heightIndex, cells.length);
+  }
+
+  console.log('nodes after change', nodes);
+  console.log('cells after change', cells);
+  console.log('heightIndex after change', heightIndex);
+
+  return [nodes, cells, heightIndex];
 };
