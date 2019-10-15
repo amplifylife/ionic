@@ -271,11 +271,11 @@ export class VirtualScroll implements ComponentInterface {
   @Method()
   async removeItem(index: number): Promise<void> {
     this.animateChange = true;
-    return Promise.resolve(this.updateVD(index + 1));
+    return Promise.resolve(this.updateVD(index));
   }
 
   updateVD(index: number) {
-    [this.virtualDom, this.cells, this.heightIndex] = removeItem(index, this.virtualDom, this.cells, this.getHeightIndex());
+    removeItem(index, this.virtualDom, this.cells, this.getHeightIndex());
     this.scheduleUpdate();
   }
 
