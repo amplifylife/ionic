@@ -270,12 +270,13 @@ export class VirtualScroll implements ComponentInterface {
 
   @Method()
   async removeItem(index: number): Promise<void> {
+    console.log('removeItem, cells', this.cells);
     this.animateChange = true;
     return Promise.resolve(this.updateVD(index));
   }
 
   updateVD(index: number) {
-    removeItem(index, this.virtualDom, this.cells, this.getHeightIndex());
+    this.totalHeight = removeItem(index, this.virtualDom, this.cells, this.getHeightIndex(), this.totalHeight);
     this.scheduleUpdate();
   }
 
@@ -355,6 +356,7 @@ export class VirtualScroll implements ComponentInterface {
 
     if (this.animateChange) {
       this.animateChange = false;
+      console.log('after update virtual scroll, cells', this.cells);
     }
   }
 

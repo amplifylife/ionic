@@ -299,7 +299,7 @@ export const positionForIndex = (index: number, cells: Cell[], heightIndex: Uint
   return -1;
 };
 
-export const removeItem = (index: number, nodes: VirtualNode[], cells: Cell[], heightIndex: Uint32Array): any => {
+export const removeItem = (index: number, nodes: VirtualNode[], cells: Cell[], heightIndex: Uint32Array, totalHeight: number): any => {
   console.log('nodes before change', nodes);
   console.log('cells before change', cells);
   console.log('heightIndex before change', heightIndex);
@@ -308,10 +308,21 @@ export const removeItem = (index: number, nodes: VirtualNode[], cells: Cell[], h
     return n.cell.index === index && n.cell.type === CELL_TYPE_ITEM;
   });
 
+  const updatedNodes: VirtualNode[] = [];
   const updatedCells: Cell[] = [];
 
   if (nodeToRemove) {
     const nodeIndex = nodeToRemove.cell.i;
+
+    updatedNodes.forEach((node, i) => {
+      if (node.cell.i > nodeIndex) {
+        node.cell.i = i - 1;
+        updatedNodes.push(node);
+      } else if (i < nodeIndex) {
+        updatedNodes.push(node);
+      }
+    });
+    nodes = updatedNodes;
 
     cells.forEach((cell, i) => {
       if (cell.i > nodeIndex) {
@@ -332,11 +343,14 @@ export const removeItem = (index: number, nodes: VirtualNode[], cells: Cell[], h
     const buf2 = heightIndex.slice(nodeIndex + 1, heightIndex.length);
     heightIndex = appendBuffer(buf1, buf2);
     heightIndex = resizeBuffer(heightIndex, cells.length);
-  }
 
-  console.log('nodes after change', nodes);
-  console.log('cells after change', cells);
-  console.log('heightIndex after change', heightIndex);
+    console.log('nodes after change', nodes);
+    console.log('cells after change', cells);
+    console.log('heightIndex after change', heightIndex);
+
+    return totalHeight - nodeToRemove.cell.height;
+  }
+  return totalHeight;
 };
 
 const appendBuffer = (buffer1: Uint32Array, buffer2: Uint32Array) => {
